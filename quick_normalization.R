@@ -32,9 +32,6 @@ rdf <- readr::read_tsv(argv$rdf_fp, col_types=cols(), comment = "#", na = argv$n
 sdf <- rdf %>% dplyr::select(ddf[[argv$sample_col]]) %>% as.matrix()
 adf <- rdf %>% dplyr::select(-one_of(ddf[[argv$sample_col]]))
 
-source("~/src/RWorkflowModules/debug_tools.R")
-debug_tools$use_print_argv(argv)
-
 message("Loaded raw data with dimensions: ", paste(dim(rdf), collapse=", "))
 
 generate_normalized_data <- function(ddf, sdf, adf, norm_method, sample_col, out_fp) {
