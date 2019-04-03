@@ -3,6 +3,8 @@
 library(argparser)
 suppressPackageStartupMessages(library(tidyverse))
 
+message("Executing")
+
 # Procedure:
 # Retrieve protein data information, for instance from UniProt
 # Retrieve it in .tab format
@@ -11,18 +13,15 @@ suppressPackageStartupMessages(library(tidyverse))
 main <- function() {
     
     argv <- parse_input_params()
-    # source("~/src/RWorkflowModules/debug_tools.R")
-    # debug_tools$use_print_argv(argv)
-    
+
     rdf <- readr::read_tsv(argv$rdf, col_types=readr::cols(), comment = "#", na = argv$na_val)
     db_df <- readr::read_tsv(argv$db, col_types=readr::cols())
 
-    rdf_first_protein_ids <- unlist(lapply(strsplit(rdf[[argv$rdf_name_col]], argv$rdf_name_col_splitter), function(entry) { entry[1] }))
-    rdf_annotated_protein_ids <- paste0(argv$add_prefix, rdf_first_protein_ids, argv$add_suffix)
-    
-    match_status_message(rdf_annotated_protein_ids, db_df[[argv$db_name_col]])
-    
+    rdf_annotated_protein_ids <- str_split(rdf[[argv$rdf_name_col]], argv$rdf_name_col_splitter, simplify=TRUE)[, 1]
+
     db_df[[argv$db_name_col]] <- as.character(db_df[[argv$db_name_col]])
+    
+    match_status_message(rdf_annotated_protein_ids, db_df[[argv$db_name_col]], argv$db_name_col)
     
     queries <- data.frame(Protein=rdf_annotated_protein_ids)
     queries$Protein <- as.character(queries$Protein)
@@ -32,12 +31,12 @@ main <- function() {
     write_tsv(out_df, path=argv$out)
 }
 
-match_status_message <- function(query_proteins, db_names) {
+match_status_message <- function(query_proteins, db_names, db_col_name) {
     match_count <- length(which(query_proteins %in% db_names))
     message(
-        "Match rate against database (column: \"", argv$db_name_col, "\"): ", 
-        round(100 * match_count / length(protein_search_queries), 3), "% ", 
-        "(", match_count, "/", length(protein_search_queries), ")")
+        "Match rate against database (column: \"", db_col_name, "\"): ", 
+        round(100 * match_count / length(query_proteins), 3), "% ", 
+        "(", match_count, "/", length(query_proteins), ")")
 }
 
 parse_input_params <- function() {
@@ -48,17 +47,22 @@ parse_input_params <- function() {
     parser <- add_argument(parser, "--out", help="Output matrix path", type="character")
     
     parser <- add_argument(parser, "--rdf_name_col", help="Name for column containing ID in rdf", type="character")
-    
     parser <- add_argument(parser, "--rdf_name_col_splitter", help="Divider when multiple annotations", type="character", default=",")
-    
     parser <- add_argument(parser, "--db_name_col", help="Name for column containing ID in db", type="character")
-    parser <- add_argument(parser, "--db_annot_col", help="Annotation columns in db", type="character")
+    # parser <- add_argument(parser, "--db_annot_col", help="Annotation columns in db", type="character")
 
-    parser <- add_argument(parser, "--add_prefix", help="Optional extension of input data for protein matching", type="character", default=NULL)
-    parser <- add_argument(parser, "--add_suffix", help="Optional extension of input data for protein matching", type="character", default=NULL)
     parser <- add_argument(parser, "--na_val", help="NA value field", default="NA", type="character")
 
+    parser <- add_argument(parser, "--show_pars", help="Show input parameters, for debug", type="bool", default=FALSE)
+    parser <- add_argument(parser, "--debug_tools_path", help="Display help output", type="character", default="RWorkflowModules/debug_tools.R")
+    
     argv <- parse_args(parser)
+    
+    if (argv$show_pars) {
+        source(argv$debug_tools_path)
+        debug_tools$use_print_argv(argv)
+    }
+    
     argv
 }
 
