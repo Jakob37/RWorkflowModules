@@ -16,6 +16,7 @@ parser <- add_argument(parser, "--contrasts", help="Contrasts to perform", type=
 argv <- parse_args(parser)
 
 suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(limma))
 
 # source("~/src/RWorkflowModules/debug_tools.R")

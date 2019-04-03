@@ -3,7 +3,8 @@ library(R6)
 DebugTools <- R6Class(
     public = list(
         use_print_argv = function(argv) {
-            message("Start ----")
+            message("Start ----\n")
+            message("argv <- list()")
             for (arg_name in names(argv)) {
                 arg <- argv[[arg_name]]
 
@@ -11,17 +12,21 @@ DebugTools <- R6Class(
                     arg_string <- paste0("c(\"", paste(arg, collapse="\", \""), "\")")
                 }
                 else if (is.null(arg)) {
-                    arg_string <- "NULL"
+                    next
+                    # arg_string <- "NULL"
                 }
                 else if (is.na(arg)) {
                     arg_string <- "NA"
+                }
+                else if (is.numeric(arg) || is.logical(arg)) {
+                    arg_string <- arg
                 }
                 else {
                     arg_string <- paste0("\"", arg, "\"")
                 }
                 message("argv$", arg_name, " <- ", arg_string)
             }
-            message("End ----")
+            message("\nEnd ----")
         }
     ),
     private = list()
