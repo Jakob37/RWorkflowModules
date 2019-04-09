@@ -6,6 +6,10 @@ main <- function() {
     
     argv <- parse_input_params()
     
+    if (!is.na(argv$contrast_names) && length(argv$contrasts) != length(argv$contrast_names)) {
+        stop("Argument--contrast_names must either be NA or of same length as '--contrasts'")
+    }
+    
     suppressPackageStartupMessages(library(tidyverse))
     suppressPackageStartupMessages(library(dplyr))
     suppressPackageStartupMessages(library(limma))
@@ -26,7 +30,7 @@ main <- function() {
     message("Loaded raw data with dimensions: ", paste(dim(rdf), collapse=", "))
     
     # Prepare R equation objects
-    combined_limma_tables <- calculate_combined_limma_tables(argv$model, ddf, sdf, argv$contrasts)
+    combined_limma_tables <- calculate_combined_limma_tables(argv$model, ddf, sdf, argv$contrasts, contrast_names=argv$contrast_names)
     
     # Output
     full_stat_rdf <- cbind(adf, combined_limma_tables, raw_sdf)
@@ -36,7 +40,7 @@ main <- function() {
     
 }
 
-calculate_combined_limma_tables <- function(model_string, ddf, sdf, contrasts) {
+calculate_combined_limma_tables <- function(model_string, ddf, sdf, contrasts, contrast_names=NA) {
     
     model <- as.formula(model_string)
     model_design <- model.matrix(model, data=ddf)
@@ -55,7 +59,12 @@ calculate_combined_limma_tables <- function(model_string, ddf, sdf, contrasts) {
             my_tbl$absLogFC <- abs(my_tbl$logFC)
             my_tbl
         })
-    names(limma_tables) <- colnames(fit_bayes$coefficients)
+    if (is.na(contrast_names)) {
+        names(limma_tables) <- colnames(fit_bayes$coefficients)
+    }
+    else {
+        names(limma_tables) <- contrast_names
+    }
     combined_limma_tables <- do.call("cbind", limma_tables)
     combined_limma_tables <- cbind(row_nbr=seq_len(nrow(combined_limma_tables)), combined_limma_tables)
     
@@ -73,6 +82,7 @@ parse_input_params <- function() {
     
     parser <- add_argument(parser, "--model", help="Statistical model to use", type="character")
     parser <- add_argument(parser, "--contrasts", help="Contrasts to perform", type="character", nargs = Inf)
+    parser <- add_argument(parser, "--contrast_names", help="Names for contrasts, same length as --contrasts argument", type="character", nargs = Inf, default=NA)
     
     parser <- add_argument(parser, "--show_pars", help="Show input parameters, for debug", type="bool", default=FALSE)
     parser <- add_argument(parser, "--debug_tools_path", help="Display help output", type="character", default="RWorkflowModules/debug_tools.R")

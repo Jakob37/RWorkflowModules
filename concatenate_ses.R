@@ -10,11 +10,7 @@ parser <- add_argument(parser, "--trim_pattern", help="Trim this part of file to
 
 argv <- parse_args(parser)
 
-print(argv)
-
 labels <- gsub(argv$trim_pattern, "", gsub(".*/", "", argv$input_ses))
-
-print(labels)
 
 flat_ses <- list()
 nested_ses <- list()
@@ -29,7 +25,7 @@ for (i in seq_len(length(argv$input_ses))) {
     nested_ses[[label]] <- to_nested_ses
     
     to_flat_ses <- ses
-    names(to_flat_ses) <- paste(label, names(ses), sep="_")
+    # names(to_flat_ses) <- paste(label, names(ses), sep="_")
     flat_ses <- c(flat_ses, to_flat_ses)
 }
 

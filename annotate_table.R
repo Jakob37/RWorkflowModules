@@ -18,9 +18,7 @@ main <- function() {
     db_df <- readr::read_tsv(argv$db, col_types=readr::cols())
 
     rdf_annotated_protein_ids <- str_split(rdf[[argv$rdf_name_col]], argv$rdf_name_col_splitter, simplify=TRUE)[, 1]
-
     db_df[[argv$db_name_col]] <- as.character(db_df[[argv$db_name_col]])
-    
     match_status_message(rdf_annotated_protein_ids, db_df[[argv$db_name_col]], argv$db_name_col)
     
     queries <- data.frame(Protein=rdf_annotated_protein_ids)
