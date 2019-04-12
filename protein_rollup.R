@@ -11,6 +11,8 @@ parser <- add_argument(parser, "--sample_col", help="Design matrix sample column
 parser <- add_argument(parser, "--peptide_col", help="Peptide column in main data frame", type="character")
 parser <- add_argument(parser, "--protein_col", help="Protein column in main data frame", type="character")
 
+parser <- add_argument(parser, "--out_protein_name", help="Name of protein column in output", type="character")
+
 parser <- add_argument(parser, "--protein_tools_path", help="CraftOmics protein tools path", type="character")
 
 argv <- parse_args(parser)
@@ -27,6 +29,7 @@ pr$protein_rollup_on_matrix(
     peptide_col=argv$peptide_col,
     sample_col=argv$sample_col,
     out_fp=argv$out_fp,
-    rollup_func="rrollup"
+    rollup_func="rrollup",
+    protein_col_name=argv$out_protein_name
 )
 

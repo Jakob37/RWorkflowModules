@@ -15,7 +15,7 @@ main <- function() {
     argv <- parse_input_params()
 
     rdf <- readr::read_tsv(argv$rdf, col_types=readr::cols(), comment = "#", na = argv$na_val)
-    db_df <- readr::read_tsv(argv$db, col_types=readr::cols())
+    db_df <- readr::read_tsv(argv$db, col_types=readr::cols()) %>% distinct(UQ(as.name(argv$db_name_col)), .keep_all=TRUE)
 
     rdf_annotated_protein_ids <- str_split(rdf[[argv$rdf_name_col]], argv$rdf_name_col_splitter, simplify=TRUE)[, 1]
     db_df[[argv$db_name_col]] <- as.character(db_df[[argv$db_name_col]])
