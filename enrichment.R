@@ -39,6 +39,7 @@ main <- function() {
     
     deparsed_contrasts <- deparse_contrasts(argv$contrasts, argv$cond_col, splitter="-")
 
+    used_names <- c()
     gage_dfs <- list()    
     for (contrast_i in seq_len(nrow(deparsed_contrasts))) {
         message("Processing contrast: ", argv$contrasts[[contrast_i]])
@@ -60,11 +61,12 @@ main <- function() {
             compare="unpaired",
             same.dir=TRUE
         )
-        
+
+        used_names <- c(used_names, argv$contrast_names[contrast_i])        
         gage_df <- gage_out %>% as.data.frame() %>% rownames_to_column() %>% rowid_to_column()
         gage_dfs[[argv$contrast_names[contrast_i]]] <- gage_df
     }
-    names(gage_dfs) <- argv$contrast_names
+    names(gage_dfs) <- used_names
     combined_dfs <- do.call("cbind", gage_dfs)
     
     write_tsv(combined_dfs, path=argv$enrichment_out_fp)
