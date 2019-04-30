@@ -27,12 +27,12 @@ main <- function() {
     
     red_mats <- reduce_technical_replicates_for_matrices(designMat = ddf, dataMat = sdf, techRepGroups=ddf[[argv$techrep_col]])
     
-    if (!is.null(argv$techred_rdf_fp)) {
+    if (!is.na(argv$techred_rdf_fp)) {
         message("Writing ", nrow(red_mats$data), " to ", argv$techred_rdf_fp)
         write_tsv(cbind(adf, data.frame(red_mats$data)), path=argv$techred_rdf_fp)
     }
     
-    if (!is.null(argv$techred_ddf_fp)) {
+    if (!is.na(argv$techred_ddf_fp)) {
         message("Writing ", nrow(red_mats$design), " to ", argv$techred_ddf_fp)
         write_tsv(red_mats$design, path=argv$techred_ddf_fp)
     }
@@ -68,8 +68,8 @@ parse_input_params <- function() {
     parser <- add_argument(parser, "--techrep_col", help="Design matrix techrep column", type="character")
     parser <- add_argument(parser, "--na_val", help="NA value fields", type="character", default="NA")
     
-    parser <- add_argument(parser, "--techred_ddf_fp", help="Techred design matrix path", type="character")
-    parser <- add_argument(parser, "--techred_rdf_fp", help="Techred data matrix path", type="character")
+    parser <- add_argument(parser, "--techred_ddf_fp", help="Techred design matrix path", type="character", default=NA)
+    parser <- add_argument(parser, "--techred_rdf_fp", help="Techred data matrix path", type="character", default=NA)
     
     parser <- add_argument(parser, "--show_pars", help="Show input parameters, for debug", type="bool", default=FALSE)
     parser <- add_argument(parser, "--debug_tools_path", help="Display help output", type="character", default="RWorkflowModules/debug_tools.R")

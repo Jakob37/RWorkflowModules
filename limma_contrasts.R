@@ -7,7 +7,8 @@ main <- function() {
     argv <- parse_input_params()
     
     if (!is.na(argv$contrast_names) && length(argv$contrasts) != length(argv$contrast_names)) {
-        stop("Argument '--contrast_names' must either be NA or of same length as '--contrasts'")
+        stop("Argument '--contrast_names' must either be NA or of same length as '--contrasts', found: ",
+        paste(argv$contrasts, collapse=", "), " and ", paste(argv$contrast_names))
     }
     
     suppressPackageStartupMessages(library(tidyverse))
@@ -121,15 +122,15 @@ parse_input_params <- function() {
     parser <- add_argument(parser, "--contrasts", help="Contrasts to perform", type="character", nargs = Inf)
     parser <- add_argument(parser, "--contrast_names", help="Names for contrasts, same length as --contrasts argument", type="character", nargs = Inf, default=NA)
     
-    parser <- add_argument(parser, "--cond_col_name", help="Column in design matrix containing contrast levels, used to verify contrasts if specified", type="character", default=NA)
+    parser <- add_argument(parser, "--cond_col_name", help="Column in design matrix containing contrast levels, used to verify contrasts if specified", type="character")
     parser <- add_argument(parser, "--omit_absent_contrasts", help="If set and contrasts are missing - continue processing", type="logical", default=FALSE)
     
-    parser <- add_argument(parser, "--show_pars", help="Show input parameters, for debug", type="bool", default=FALSE)
+    parser <- add_argument(parser, "--show_param", help="Show input parameters, for debug", type="bool", default=FALSE)
     parser <- add_argument(parser, "--debug_tools_path", help="Display help output", type="character", default="RWorkflowModules/debug_tools.R")
     
     argv <- parse_args(parser)
     
-    if (argv$show_pars) {
+    if (argv$show_param) {
         source(argv$debug_tools_path)
         debug_tools$use_print_argv(argv)
     }
