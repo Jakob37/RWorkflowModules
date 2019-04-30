@@ -51,12 +51,12 @@ parse_input_params <- function() {
 
     parser <- add_argument(parser, "--na_val", help="NA value field", default="NA", type="character")
 
-    parser <- add_argument(parser, "--show_pars", help="Show input parameters, for debug", type="bool", default=FALSE)
+    parser <- add_argument(parser, "--show_param", help="Show input parameters, for debug", type="bool", default=FALSE)
     parser <- add_argument(parser, "--debug_tools_path", help="Display help output", type="character", default="RWorkflowModules/debug_tools.R")
     
     argv <- parse_args(parser)
     
-    if (argv$show_pars) {
+    if (argv$show_param) {
         source(argv$debug_tools_path)
         debug_tools$use_print_argv(argv)
     }
