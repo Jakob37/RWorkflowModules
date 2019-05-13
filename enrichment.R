@@ -33,10 +33,21 @@ main <- function() {
     
     # WARNING: HOW TO HANDLE REDUNDANT IDS?
     warning("Wildly removing redundant IDs with no regards for accuracy or optimal selection")
-    rdf <- rdf %>% filter(!is.na(annot)) %>% distinct(annot, .keep_all=TRUE)
+    # Could I use the ones with the most values? Then highest intensity?
+    
+    rdf <- rdf %>% filter(!is.na(annot))
     cond_col <- ddf %>% dplyr::select(argv$cond_col) %>% unlist() %>% as.character()
-    sdf <- rdf %>% dplyr::select(ddf[[argv$sample_col]]) %>% as.data.frame()
-    rownames(sdf) <- rdf$annot
+    sdf_raw <- rdf %>% dplyr::select(ddf[[argv$sample_col]]) %>% as.data.frame()
+    sdf_raw$annot <- rdf$annot
+    
+    sdf <- reduce_dataframe_for_go(sdf_raw, ddf[[argv$sample_col]], "annot")
+    # rownames(sdf) <- rdf$annot
+    
+    
+    # rdf <- rdf %>% filter(!is.na(annot)) %>% distinct(annot, .keep_all=TRUE)
+    # cond_col <- ddf %>% dplyr::select(argv$cond_col) %>% unlist() %>% as.character()
+    # sdf <- rdf %>% dplyr::select(ddf[[argv$sample_col]]) %>% as.data.frame()
+    # rownames(sdf) <- rdf$annot
     
     deparsed_contrasts <- deparse_contrasts(argv$contrasts, argv$cond_col, splitter="-")
 
@@ -72,6 +83,23 @@ main <- function() {
     combined_dfs <- do.call("cbind", gage_dfs)
     
     write_tsv(combined_dfs, path=argv$enrichment_out_fp)
+}
+
+reduce_dataframe_for_go <- function(df, samples, reduce_col) {
+    
+    unique_levels <- unique(df[[reduce_col]])
+    unique_lines <- list()
+    
+    for (unique_level in unique_levels) {
+        unique_lines[[unique_level]] <- df %>% 
+            filter(annot == unique_level) %>% 
+            dplyr::select(samples) %>% 
+            mutate(select_col=rowSums(., na.rm=TRUE)) %>% 
+            filter(select_col==max(select_col)) %>%
+            head(1) %>%
+            dplyr::select(-select_col)
+    }
+    do.call("rbind", unique_lines)
 }
 
 deparse_contrasts <- function(contrasts, contrast_base, splitter="-") {
