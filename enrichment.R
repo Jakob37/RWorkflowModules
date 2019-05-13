@@ -16,7 +16,7 @@ main <- function() {
     }
     else if (argv$set_type == "KEGG") {
         # Format: ath
-        feature_set <- gage::kegg.gsets(speceies=argv$species)$kg.sets
+        feature_set <- gage::kegg.gsets(species=argv$species)$kg.sets
     }
     else {
         stop("Unknown set type: ", argv$set_type, " acceptible are 'GO' and 'KEGG'")
@@ -27,6 +27,7 @@ main <- function() {
     rdf <- raw_rdf
     rdf$annot <- rdf %>% dplyr::select(argv$annot_col) %>% unlist()
     if (!is.na(argv$trim_reg)) {
+        message("Trimming using pattern: ", argv$trim_reg)
         rdf$annot <- rdf$annot %>% gsub(argv$trim_reg, "", .)
     }
     
@@ -62,6 +63,7 @@ main <- function() {
             same.dir=TRUE
         )
 
+        message("Processing contrast_i: ", contrast_i)
         used_names <- c(used_names, argv$contrast_names[contrast_i])        
         gage_df <- gage_out %>% as.data.frame() %>% rownames_to_column() %>% rowid_to_column()
         gage_dfs[[argv$contrast_names[contrast_i]]] <- gage_df
