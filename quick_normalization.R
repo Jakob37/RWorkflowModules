@@ -33,6 +33,9 @@ main <- function() {
     else if (argv$normalization == "median") {
         norm_method <- NormalyzerDE::medianNormalization
     }
+    else if (argv$normalization == "quantile") {
+        norm_method <- NormalyzerDE::performQuantileNormalization
+    }
     else if (argv$normalization == "log2") {
         norm_method <- log2
     }
@@ -106,10 +109,7 @@ groupwise_normalized_data <- function(ddf, sdf, group_col, norm_method) {
     
     groups <- ddf[[group_col]]
     unique_groups <- sort(unique(groups))
-    # group_contrasts <- lapply(unique_groups, function(unique_val, groups) {
-    #     unique_val == groups
-    # }, groups=groups)
-    
+
     group_indices <- lapply(unique_groups, function(unique_val, groups) {
         which(unique_val == groups)
     }, groups=groups)
@@ -139,10 +139,7 @@ parse_input_params <- function() {
     
     parser <- add_argument(parser, "--out_fp", help="Output matrix path", type="character", default="")
     parser <- add_argument(parser, "--normalization", help="Normalization type (raw, log2, loess, median, vsn)", type="character")
-    # parser <- add_argument(parser, "--median_fp", help="Output matrix path", type="character", default="")
-    # parser <- add_argument(parser, "--loess_fp", help="Output matrix path", type="character", default="")
-    # parser <- add_argument(parser, "--vsn_fp", help="Output matrix path", type="character", default="")
-    
+
     parser <- add_argument(parser, "--show_pars", help="Display help output", type="bool", default=FALSE)
     parser <- add_argument(parser, "--debug_tools_path", help="Display help output", type="character", default="RWorkflowModules/debug_tools.R")
     

@@ -129,9 +129,9 @@ calculate_presence_absence_tables <- function(ddf, sdf, contrasts, sample_col, c
 
         samples_high <- ddf %>% filter(UQ(as.name(cond_col)) %in% split_contrasts_only_name[contrast_i, 1]) %>% dplyr::select(sample_col) %>% unlist(use.names=FALSE)
         samples_low <- ddf %>% filter(UQ(as.name(cond_col)) %in% split_contrasts_only_name[contrast_i, 2]) %>% dplyr::select(sample_col) %>% unlist(use.names=FALSE)
-        
-        high_has_values <- apply(sdf[, samples_high], 1, function(row) { length(na.omit(row)) })
-        low_has_values <- apply(sdf[, samples_low], 1, function(row) { length(na.omit(row)) })
+
+        high_has_values <- apply(sdf[, samples_high, drop=FALSE], 1, function(row) { length(na.omit(row)) })
+        low_has_values <- apply(sdf[, samples_low, drop=FALSE], 1, function(row) { length(na.omit(row)) })
         
         comb_presence <- as.data.frame(cbind(high_has_values, low_has_values))
         colnames(comb_presence) <- c("high_c", "low_c")

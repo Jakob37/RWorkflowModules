@@ -2,6 +2,7 @@
 
 library(argparser)
 
+
 main <- function() {
     
     argv <- parse_input_params()
@@ -61,7 +62,8 @@ main <- function() {
         samp_inds <- which(cond_col == contrast_levels[2])
         
         if (length(ref_inds) == 0 || length(samp_inds) == 0) {
-            message("At least one level didn't have samples, skipping. ref_inds entries: ", length(ref_inds), " samp_inds entries: ", length(samp_inds))
+            message("At least one level didn't have samples, skipping. ref_inds entries: ", 
+                    length(ref_inds), " samp_inds entries: ", length(samp_inds))
             next
         }
         
@@ -83,7 +85,56 @@ main <- function() {
     combined_dfs <- do.call("cbind", gage_dfs)
     
     write_tsv(combined_dfs, path=argv$enrichment_out_fp)
+    
+    if (!is.na(argv$go_annotated_out)) {
+        
+    }
 }
+
+cluster_profiler_enrichment <- function() {
+    
+    stop("NOT IN USE")
+    # https://yulab-smu.github.io/clusterProfiler-book/chapter3.html
+    
+    make_gene_list <- function(row_data, id_col, stat_col, filter_col=NULL, filter_thres=0.1) {
+        
+        df <- row_data %>% data.frame()
+        
+        if (!is.null(filter_col)) {
+            df <- df %>% filter(UQ(as.name(filter_col)) < filter_thres)
+        }
+        
+        df <- df %>% dplyr::select(c(id_col, stat_col))
+        
+        colnames(df) <- c("id_col", "stat_col")
+        df <- df %>%
+            filter(grepl("^AT", id_col)) %>%
+            arrange(desc(stat_col)) %>%
+            mutate(id_col=gsub("\\.\\d$", "", id_col))
+        geneList <- df$stat_col
+        names(geneList) <- df$id_col
+        geneList
+    }
+    
+    make_universe <- function(row_data, id_col) {
+        all_ids <- unique(row_data[[id_col]])
+        at_ids <- all_ids[grepl("^AT", all_ids)] %>% gsub("\\.\\d$", "", .)
+        at_ids
+    }
+    
+    # my_gene_list <- rowData(ses[[1]]) %>% 
+    #     data.frame() %>% 
+    #     dplyr::select(c("Bel_2d.logFC", "ProteinID")) %>% 
+    #     arrange(desc(Bel_2d.logFC)) %>% 
+    #     filter(grepl("^AT", ProteinID)) %>% 
+    #     mutate(ProteinID=gsub("\\.\\d$", "", ProteinID))
+    
+    # Requires entrez format: 834117,844329,841232,819388,818134,834813
+    enrichGO(names(geneList), OrgDb="org.At.tair.db", keyType="TAIR", universe=names(geneList))
+    
+    gseGO(geneList=geneList, OrgDb="org.At.tair.db", keyType="TAIR")
+}
+
 
 reduce_dataframe_for_go <- function(df, samples, reduce_col) {
     
@@ -108,6 +159,29 @@ deparse_contrasts <- function(contrasts, contrast_base, splitter="-") {
     trimmed_splits
 }
 
+generate_annot_col <- function(protein_ids, go_terms_list, go_annot_splitter=" ") {
+
+    protein_id_gos <- list()
+    for (protein_id in unique(protein_ids)) {
+        
+        gene_gos <- sapply(
+            go_terms_list, 
+            function(entries, protein_id) { protein_id %in% entries }, 
+            protein_id=protein_id) %>% 
+                unname()
+        # gene_gos <- sapply(arab_gos, function(entries) { "AT2G48150" %in% entries }) %>% unname()
+        if (length(which(gene_gos)) > 0) {
+            go_string <- paste(str_split(names(go_terms_list)[gene_gos], go_annot_splitter, simplify = TRUE)[, 1], collapse=",")
+        }
+        else {
+            go_string <- ""
+        }
+        protein_id_gos[[protein_id]] <- go_string
+    }
+
+            
+}
+
 parse_input_params <- function() {
     
     parser <- arg_parser("Enrichment module")
@@ -117,6 +191,7 @@ parse_input_params <- function() {
     parser <- add_argument(parser, "--cond_col", help="Condition column header in design matrix", type="character")
     parser <- add_argument(parser, "--annot_col", help="Annot. col in data matrix", type="character")
     parser <- add_argument(parser, "--enrichment_out_fp", help="Output path for annotated matrix", type="character")
+    parser <- add_argument(parser, "--go_annotated_out", help="Output with added GO terms for each gene", type="character", default=NA)
     
     parser <- add_argument(parser, "--contrasts", help="Condition contrasts for which to perform enrichment, two entries, first is reference level, second studied condition", type="character", nargs=Inf)
     parser <- add_argument(parser, "--contrast_names", help="Names of provided contrasts", type="character", nargs=Inf)
