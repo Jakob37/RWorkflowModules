@@ -7,6 +7,7 @@ parser <- add_argument(parser, "--ddf_fp", help="Design matrix path", type="char
 parser <- add_argument(parser, "--rdf_fps", help="Raw matrix path", type="character", nargs=Inf)
 parser <- add_argument(parser, "--out_fp", help="Combined SummarizedExperiments file path", type="character")
 parser <- add_argument(parser, "--sample_col", help="Design matrix sample column", type="character", nargs=Inf)
+parser <- add_argument(parser, "--name", help="Name of the dataset in the list", default="")
 
 argv <- parse_args(parser)
 
@@ -35,5 +36,9 @@ ses <- lapply(
     sample_col=argv$sample_col
 )
 
-names(ses) <- gsub("_[a-z]+_[a-z]+.tsv$", "", gsub(".*/", "", argv$rdf_fps))
+if (argv$name == "") {
+    names(ses) <- gsub("_[a-z]+_[a-z]+.tsv$", "", gsub(".*/", "", argv$rdf_fps))
+} else {
+    names(ses) <- argv$name
+}
 saveRDS(ses, file = argv$out_fp)

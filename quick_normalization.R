@@ -8,8 +8,8 @@ main <- function() {
     
     argv <- parse_input_params()
     
-    suppressPackageStartupMessages(library(dplyr))
-    suppressPackageStartupMessages(library(readr))
+    suppressPackageStartupMessages(library(dplyr, warn.conflicts=FALSE))
+    suppressPackageStartupMessages(library(readr, warn.conflicts=FALSE))
     
     ddf <- readr::read_tsv(argv$ddf_fp, col_types=cols())
     
@@ -140,12 +140,12 @@ parse_input_params <- function() {
     parser <- add_argument(parser, "--out_fp", help="Output matrix path", type="character", default="")
     parser <- add_argument(parser, "--normalization", help="Normalization type (raw, log2, loess, median, vsn)", type="character")
 
-    parser <- add_argument(parser, "--show_pars", help="Display help output", type="bool", default=FALSE)
+    parser <- add_argument(parser, "--show_param", help="Display help output", type="bool", default=FALSE)
     parser <- add_argument(parser, "--debug_tools_path", help="Display help output", type="character", default="RWorkflowModules/debug_tools.R")
     
     argv <- parse_args(parser)
     
-    if (argv$show_pars) {
+    if (argv$show_param) {
         source(argv$debug_tools_path)
         debug_tools$use_print_argv(argv)
     }

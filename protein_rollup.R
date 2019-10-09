@@ -12,7 +12,6 @@ parser <- add_argument(parser, "--peptide_col", help="Peptide column in main dat
 parser <- add_argument(parser, "--protein_col", help="Protein column in main data frame", type="character")
 
 parser <- add_argument(parser, "--out_protein_name", help="Name of protein column in output", type="character")
-
 parser <- add_argument(parser, "--protein_tools_path", help="CraftOmics protein tools path", type="character")
 
 argv <- parse_args(parser)
@@ -32,4 +31,3 @@ pr$protein_rollup_on_matrix(
     rollup_func="rrollup",
     protein_col_name=argv$out_protein_name
 )
-

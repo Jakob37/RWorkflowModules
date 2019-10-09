@@ -18,41 +18,78 @@ main <- function() {
     db_df <- readr::read_tsv(argv$db, col_types=readr::cols()) %>% distinct(UQ(as.name(argv$db_name_col)), .keep_all=TRUE)
     db_df[[argv$db_name_col]] <- as.character(db_df[[argv$db_name_col]])  # Make sure database column is in string format
     
-    if (argv$clean_up_descr_type == "TAIR") {
+    supported_cleanups <- c("TAIR", "SwissProt", "id_descr_os")
+    
+    if (argv$clean_up_descr_type %in% supported_cleanups) {
         if (is.na(argv$clean_up_descr_colname)) {
             message("No clean_up_colname assigned to clean up, skipping...")
         }
         else {
             message("Cleaning up annotations - might not be well adjusted for data! Trimming everything beyond inline-pipe character, and after 'OS='")
-            db_df$Description <- db_df$Description %>% gsub("^\\| ", "", .) %>% gsub(" \\|.*", "", .) %>% gsub("OS=.*", "", .)
+            if (argv$clean_up_descr_type == "TAIR") {
+                db_df[[paste0(argv$clean_up_descr_colname, "_descr")]] <- db_df[[argv$clean_up_descr_colname]] %>% gsub("^\\| ", "", .) %>% gsub(" \\|.*", "", .) %>% gsub("OS=.*", "", .)
+            }
+            else if (argv$clean_up_descr_type == "SwissProt") {
+                db_df[[paste0(argv$clean_up_descr_colname, "_descr")]] <- db_df[[argv$clean_up_descr_colname]] %>% gsub("^.* ", "", .)
+            }
+            else if (argv$clean_up_descr_type == "id_descr_os") {
+                db_df[[paste0(argv$clean_up_descr_colname, "_descr")]] <- db_df[[argv$clean_up_descr_colname]] %>% 
+                    gsub("\\w\\w\\|", "", .) %>%
+                    gsub("\\|.*$", "", .)
+            }
+            else {
+                stop("Unknown state, somethis is wrong in the code!")
+            }
         }
     }
     else if (!is.na(argv$clean_up_descr_type)) {
-        message("Only TAIR supported as clean_up_annot type")
+        message("Only ", paste(supported_cleanups, collapse=", "), " supported as clean_up_annot type")
     }
     
-    rdf_annotated_protein_ids_list <- str_split(rdf[[argv$rdf_name_col]], argv$rdf_name_col_splitter)
+    print(head(db_df[[argv$clean_up_descr_colname]]))
+    
+    protein_col <- argv$rdf_name_col
+    
+    rdf_annotated_protein_ids_list <- str_split(rdf[[protein_col]], argv$rdf_name_col_splitter)
+    rdf_proteins_long <- tibble(
+        id=seq_along(rdf_annotated_protein_ids_list), Protein=rdf_annotated_protein_ids_list
+    ) %>% unnest() %>% data.frame()
+    protein_annot_df <- rdf_proteins_long %>% dplyr::left_join(db_df, setNames(argv$db_name_col, "Protein"), keep=TRUE)
 
-    rdf_proteins_long <- tibble(id=seq_along(rdf_annotated_protein_ids_list), Protein=rdf_annotated_protein_ids_list) %>% unnest() %>% data.frame()
-    protein_annot_df <- rdf_proteins_long %>% left_join(db_df, setNames(argv$db_name_col, "Protein"), keep=TRUE)
-
+    combine_annotations <- function(df, group_info) {
+        df %>% 
+            filter(!is.na(Protein)) %>%
+            dplyr::distinct(Protein, .keep_all = TRUE) %>%
+            apply(2, function(col) { paste(col, collapse=",") }) %>% 
+            t() %>% 
+            data.frame() 
+    }
+    
     # Retrive unique matches per line, where multiple distinct are column-wise concatenated delimited by a comma    
-    out <- protein_annot_df %>% 
-        group_by(id) %>% 
-        group_map(
-            function(df, group_info) { 
-                df[, -1] %>% 
-                    filter(!is.na(ProteinID)) %>% 
-                    distinct(ProteinID, .keep_all = TRUE) %>% 
-                    apply(2, function(col) { paste(col, collapse=",") }) %>% 
-                    t() %>% 
-                    data.frame() 
-            })
+    out <- protein_annot_df %>%
+        dplyr::group_by(id) %>%
+        dplyr::group_map(combine_annotations)
+    
+    # # Retrive unique matches per line, where multiple distinct are column-wise concatenated delimited by a comma    
+    # out <- protein_annot_df %>%
+    #     dplyr::group_by(id) %>%
+    #     dplyr::group_map(
+    #         function(df, group_info) { 
+    #             df %>% 
+    #                 filter(!is.na(UQ(as.name(protein_col)))) %>%
+    #                 dplyr::distinct(UQ(as.name(protein_col)), .keep_all = TRUE) %>%
+    #                 apply(2, function(col) { paste(col, collapse=",") }) %>% 
+    #                 t() %>% 
+    #                 data.frame() 
+    #         })
+    # )
+    # 
+    
     protein_annot_df <- do.call("rbind", out)
-    protein_annot_df$ProteinIDFirst <- protein_annot_df$ProteinID %>% as.character() %>% strsplit(",") %>% lapply(function(entries) { entries[1] }) %>% unlist()
+    protein_annot_df$ProteinIDFirst <- protein_annot_df[[protein_col]] %>% as.character() %>% strsplit(",") %>% lapply(function(entries) { entries[1] }) %>% unlist()
     
     message("Annotation count distribution - Number of entries with corresponding number matching proteins")
-    print(protein_annot_df$ProteinID %>% unlist() %>% unname() %>% as.character() %>% strsplit(",") %>% lapply(., function(entries) { length(entries) }) %>% unlist() %>% table())
+    print(protein_annot_df[[protein_col]] %>% unlist() %>% unname() %>% as.character() %>% strsplit(",") %>% lapply(., function(entries) { length(entries) }) %>% unlist() %>% table())
     
     message("Writing entries to file")
     out_df <- cbind(rdf, protein_annot_df)

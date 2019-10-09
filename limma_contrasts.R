@@ -1,7 +1,6 @@
 #!/usr/bin/env Rscript
 
 library(argparser)
-library(dplyr)
 
 main <- function() {
     
@@ -11,9 +10,9 @@ main <- function() {
         stop("Argument '--contrast_names' must either be NA or of same length as '--contrasts'")
     }
     
-    suppressPackageStartupMessages(library(tidyverse))
-    suppressPackageStartupMessages(library(dplyr))
-    suppressPackageStartupMessages(library(limma))
+    suppressPackageStartupMessages(library(tidyverse, warn.conflicts=FALSE))
+    suppressPackageStartupMessages(library(dplyr, warn.conflicts=FALSE))
+    suppressPackageStartupMessages(library(limma, warn.conflicts=FALSE))
     
     raw_ddf <- readr::read_tsv(argv$ddf_fp, col_types=cols())
     
@@ -41,10 +40,16 @@ main <- function() {
     }
 
     # Output
-    full_stat_rdf <- cbind(adf, output_stat_table, raw_sdf)
+    if (!argv$only_write_stats) {
+        out_df <- cbind(adf, output_stat_table, raw_sdf)
+    }
+    else {
+        message("Only writing stats")
+        out_df <- output_stat_table
+    }
     
-    message("Writing data with dimensions: ", paste(dim(full_stat_rdf), collapse=", "))
-    readr::write_tsv(full_stat_rdf, path=argv$out_fp)
+    message("Writing data with dimensions: ", paste(dim(out_df), collapse=", "))
+    readr::write_tsv(out_df, path=argv$out_fp)
 }
 
 setup_contrasts <- function(ddf, cond_col_name, contrasts, omit_absent_contrasts, contrast_names=NULL) {
@@ -54,7 +59,7 @@ setup_contrasts <- function(ddf, cond_col_name, contrasts, omit_absent_contrasts
 
     if (length(which(!valid_contrasts)) > 0) {
         if (!omit_absent_contrasts) {
-            stop("Contrasts missing, stopping. If you want to proceed - assign '--omit_absent_contrasts'")
+            stop(sprintf("Contrasts missing (%s), stopping. If you want to proceed - assign '--omit_absent_contrasts'", paste(contrasts, collapse=", ")))
         }
         else {
             warning(
@@ -88,10 +93,9 @@ calculate_combined_limma_tables <- function(model_string, ddf, sdf, contrasts, c
     model <- as.formula(model_string)
     model_design <- model.matrix(model, data=ddf)
     
-    # Calculate Limma table (pairwise)
     fit <- limma::lmFit(sdf, model_design)
     contrast.matrix <- limma::makeContrasts(contrasts=contrasts, levels=model_design)
-    
+
     fit_contrasts <- contrasts.fit(fit, contrast.matrix)
     fit_bayes <- limma::eBayes(fit_contrasts)
     
@@ -179,8 +183,10 @@ parse_input_params <- function() {
     parser <- add_argument(parser, "--cond_col_name", help="Column in design matrix containing contrast levels, used to verify contrasts if specified", type="character")
     parser <- add_argument(parser, "--omit_absent_contrasts", help="If set and contrasts are missing - continue processing", type="logical", default=FALSE)
 
-    parser <- add_argument(parser, "--do_presence_absence", help="Include presence absence analysis", type="logical")
+    parser <- add_argument(parser, "--do_presence_absence", help="Include presence absence analysis", type="logical", default=FALSE)
 
+    parser <- add_argument(parser, "--only_write_stats", help="Only write statistics columns to --out_fp", type="logical", default=FALSE)
+    
     parser <- add_argument(parser, "--show_param", help="Show input parameters, for debug", type="bool", default=FALSE)
     parser <- add_argument(parser, "--debug_tools_path", help="Display help output", type="character", default="RWorkflowModules/debug_tools.R")
     
